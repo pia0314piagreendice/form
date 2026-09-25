@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>謎解きフォーム</title>
     
-    <!-- Google Fonts Klee One -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
     
     <style>
-        /* すべての要素にbox-sizingを適用し、はみ出しを防止 */
         *, *::before, *::after {
             box-sizing: border-box;
         }
@@ -50,7 +48,6 @@
             text-align: center;
         }
 
-        /* 画像：画面幅に応じて縮小 */
         .puzzle-image {
             width: 100%;
             max-width: 100%;
@@ -62,14 +59,13 @@
             display: block;
         }
 
-        /* 検索風フォーム（スマホ対応レイアウト） */
         .search-form {
             display: flex;
-            flex-wrap: nowrap; /* ボタンが改行されないようにする */
+            flex-wrap: nowrap;
             width: 100%;
             border: 2px solid #cbd5e1;
             border-radius: 30px;
-            overflow: hidden; /* ボタンの角丸を親に合わせる */
+            overflow: hidden;
             background-color: #fff;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
             margin-bottom: 20px;
@@ -81,8 +77,8 @@
         }
 
         .search-input {
-            flex: 1; /* 残りの幅をすべて埋める */
-            min-width: 0; /* これがないとflexアイテムが親を突き破る原因になる */
+            flex: 1;
+            min-width: 0;
             border: none;
             padding: 16px 20px;
             font-size: 18px;
@@ -97,7 +93,7 @@
         }
 
         .submit-btn {
-            flex-shrink: 0; /* 画面が狭くてもボタンが潰れないようにする */
+            flex-shrink: 0;
             background-color: var(--primary-color);
             color: white;
             border: none;
@@ -107,7 +103,7 @@
             font-family: 'Klee One', sans-serif;
             cursor: pointer;
             transition: background-color 0.2s ease;
-            white-space: nowrap; /* テキストの折り返しを防止 */
+            white-space: nowrap;
         }
 
         .submit-btn:hover {
@@ -118,7 +114,6 @@
             transform: scale(0.98);
         }
 
-        /* ガイドテキストとメッセージ */
         .guide-text {
             font-size: 16px;
             color: #64748b;
@@ -137,7 +132,6 @@
             margin-top: 10px;
         }
 
-        /* モバイル向け微調整 */
         @media (max-width: 480px) {
             .puzzle-container {
                 padding: 20px 15px;
@@ -160,7 +154,7 @@
 
     <div class="puzzle-container">
         <!-- 画像 -->
-        <img src="formpianazo.001.jpeg" alt="謎解き問題" class="puzzle-image">
+        <img src="formpianazo.001.jpeg" alt="問題画像" class="puzzle-image" style="max-width: 100%; height: auto;">
         
         <!-- 検索風フォーム -->
         <form id="puzzleForm" class="search-form">
@@ -182,32 +176,59 @@
             const messageEl = document.getElementById('resultMessage');
             
             let messageTimeoutId = null;
+            let isComposing = false;
+            let previousValue = "";
 
-            // ROT13変換関数 (アルファベットを13文字ずらす)
+            // ROT13変換関数
             function applyRot13(str) {
                 return str.replace(/[a-zA-Z]/g, (char) => {
-                    const baseCode = char <= 'Z' ? 65 : 97;
+                    const isUpper = char <= 'Z';
+                    const baseCode = isUpper ? 65 : 97; // 'A' or 'a'
                     return String.fromCharCode((char.charCodeAt(0) - baseCode + 13) % 26 + baseCode);
                 });
             }
 
-            // 入力中の文字を監視してアルファベットだけをシフト
-            inputEl.addEventListener('beforeinput', (e) => {
-                // IME入力中(isComposing)ではない、かつアルファベットが含まれる場合
-                if (e.data && /[a-zA-Z]/.test(e.data) && !e.isComposing) {
-                    e.preventDefault(); 
-                    
-                    const shiftedText = applyRot13(e.data);
-                    
-                    // カーソル位置に変換後の文字を挿入
-                    const startPos = inputEl.selectionStart;
-                    const endPos = inputEl.selectionEnd;
-                    inputEl.setRangeText(shiftedText, startPos, endPos, 'end');
-                    
-                    // カーソル位置を後ろに進める
-                    inputEl.setSelectionRange(startPos + shiftedText.length, startPos + shiftedText.length);
-                }
+            // IME入力開始
+            inputEl.addEventListener('compositionstart', () => {
+                isComposing = true;
             });
+
+            // IME入力確定
+            inputEl.addEventListener('compositionend', () => {
+                isComposing = false;
+                processInput();
+            });
+
+            // 文字入力
+            inputEl.addEventListener('input', () => {
+                if (isComposing) return; // IME入力中は処理しない
+                processInput();
+            });
+
+            // 入力値の変換処理
+            function processInput() {
+                const currentValue = inputEl.value;
+                if (currentValue === previousValue) return;
+
+                // アルファベットが含まれているかチェック
+                if (/[a-zA-Z]/.test(currentValue)) {
+                    const selectionStart = inputEl.selectionStart;
+                    const selectionEnd = inputEl.selectionEnd;
+                    
+                    const shiftedValue = applyRot13(currentValue);
+                    inputEl.value = shiftedValue;
+                    previousValue = shiftedValue;
+
+                    // カーソル位置を元に戻す
+                    try {
+                        inputEl.setSelectionRange(selectionStart, selectionEnd);
+                    } catch (e) {
+                        // iOS Safari等でエラーになる場合への対応
+                    }
+                } else {
+                    previousValue = currentValue;
+                }
+            }
 
             // メッセージを表示して2秒で消す関数
             function showMessage(text, colorHex) {
@@ -219,10 +240,8 @@
                 messageEl.style.color = colorHex;
                 messageEl.style.opacity = '1';
 
-                // 2000ms(2秒)後にフェードアウト
                 messageTimeoutId = setTimeout(() => {
                     messageEl.style.opacity = '0';
-                    // フェードアウト完了後にテキストをクリア
                     setTimeout(() => {
                         if(messageEl.style.opacity === '0') {
                             messageEl.textContent = '';
@@ -237,10 +256,9 @@
                 
                 const inputValue = inputEl.value.trim();
                 
-                // 空送信は無視
                 if (inputValue === '') return;
 
-                // 1. アルファベット以外の文字（ひらがな、カタカナ、漢字、数字など）が含まれているか
+                // 1. アルファベット以外の文字が含まれているか
                 if (/[^a-zA-Z]/.test(inputValue)) {
                     showMessage('アルファベットで入力してください', 'var(--error-color)'); 
                     return;
@@ -253,8 +271,8 @@
                     showMessage('正解', 'var(--success-color)');
                 } else if (upperValue === 'ONE') {
                     showMessage('惜しい', 'var(--warning-color)');
-                } else if (upperValue === 'HINT' || upperValue === 'UVAG') {
-                    // 入力内容がHINT、または13ずれてUVAGとなっている場合
+                } else if (upperValue === 'UVAG') {
+                    // 入力内容がHINT(表示上はUVAG)の場合
                     showMessage('もう一度入力してください', 'var(--info-color)');
                 } else {
                     showMessage('不正解', 'var(--danger-color)');
