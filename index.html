@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>13</title>
+    <title>謎解きフォーム</title>
     
-    <!-- クレーフォント (Klee One) の読み込み -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
@@ -78,8 +77,8 @@
         }
 
         .search-input {
-            flex: 1; /* 入力欄を伸縮させる */
-            min-width: 0; /* スマホで縮めるための必須指定 */
+            flex: 1; 
+            min-width: 0; 
             border: none;
             padding: 16px 20px;
             font-size: 18px;
@@ -94,7 +93,7 @@
         }
 
         .submit-btn {
-            flex-shrink: 0; /* 送信ボタンが潰れないように固定 */
+            flex-shrink: 0; 
             background-color: var(--primary-color);
             color: white;
             border: none;
@@ -118,7 +117,8 @@
         .guide-text {
             font-size: 16px;
             color: #64748b;
-            margin: 0 0 16px 0;
+            margin: 0 0 8px 0;
+            line-height: 1.5;
         }
 
         .result-message {
@@ -155,19 +155,16 @@
 <body>
 
     <div class="puzzle-container">
-        <!-- ご指定の画像 -->
-        <img src="formpianazo.001.jpeg" alt="問題画像" class="puzzle-image" style="max-width: 100%; height: auto; margin-bottom: 20px;">
+        <img src="formpianazo.001.jpeg" alt="問題画像" class="puzzle-image">
         
-        <!-- 入力フォーム -->
         <form id="puzzleForm" class="search-form">
             <input type="text" id="puzzleInput" class="search-input" placeholder="アルファベットで入力" autocomplete="off" spellcheck="false">
             <button type="submit" class="submit-btn">送信</button>
         </form>
         
-        <!-- 案内テキスト -->
-        <p class="guide-text">分からない場合はヒントと入力してください</p>
+        <p class="guide-text">最終回答は３文字</p>
+        <p class="guide-text" style="margin-bottom: 16px;">分からない場合はヒントと入力してください</p>
         
-        <!-- 結果表示エリア -->
         <div id="resultMessage" class="result-message"></div>
     </div>
 
@@ -179,31 +176,27 @@
             
             let messageTimeoutId = null;
             let isComposing = false;
-            let previousValue = ""; // 前回の入力値を保存して差分を比較
+            let previousValue = ""; 
 
-            // ROT13変換関数（アルファベットのみ13文字ずらす）
             function applyRot13(str) {
                 return str.replace(/[a-zA-Z]/g, (char) => {
                     const isUpper = char <= 'Z';
-                    const baseCode = isUpper ? 65 : 97; // 'A' or 'a'
+                    const baseCode = isUpper ? 65 : 97; 
                     return String.fromCharCode((char.charCodeAt(0) - baseCode + 13) % 26 + baseCode);
                 });
             }
 
-            // IME入力開始（日本語変換など）
             inputEl.addEventListener('compositionstart', () => {
                 isComposing = true;
             });
 
-            // IME入力確定
             inputEl.addEventListener('compositionend', () => {
                 isComposing = false;
                 processInput();
             });
 
-            // 通常の文字入力
             inputEl.addEventListener('input', () => {
-                if (isComposing) return; // IME入力中は処理を保留
+                if (isComposing) return;
                 processInput();
             });
 
@@ -213,7 +206,6 @@
                 
                 if (newStr === oldStr) return;
 
-                // 変更前と変更後の文字列を比較し、新しく追加された部分（差分）だけを抽出する
                 let prefixLen = 0;
                 while (prefixLen < oldStr.length && prefixLen < newStr.length && oldStr[prefixLen] === newStr[prefixLen]) {
                     prefixLen++;
@@ -224,31 +216,23 @@
                     suffixLen++;
                 }
 
-                // 新たに挿入された文字列
                 const insertedStr = newStr.substring(prefixLen, newStr.length - suffixLen);
                 
-                // アルファベットが含まれる場合のみシフト処理を適用
                 if (insertedStr.length > 0 && /[a-zA-Z]/.test(insertedStr)) {
                     const shiftedInserted = applyRot13(insertedStr);
-                    
-                    // 前の文字列、シフトした文字列、後ろの文字列を結合
                     const finalStr = newStr.substring(0, prefixLen) + shiftedInserted + newStr.substring(newStr.length - suffixLen);
                     
-                    // カーソル位置を保存
                     const selectionStart = inputEl.selectionStart;
                     const selectionEnd = inputEl.selectionEnd;
                     
                     inputEl.value = finalStr;
                     previousValue = finalStr;
                     
-                    // カーソル位置を復元
                     try {
                         inputEl.setSelectionRange(selectionStart, selectionEnd);
                     } catch (e) {
-                        // iOS Safariの特定条件下でのエラー回避
                     }
                 } else {
-                    // 削除操作のみ、またはアルファベット以外の入力の場合はそのまま更新
                     previousValue = newStr;
                 }
             }
@@ -278,25 +262,18 @@
                 const inputValue = inputEl.value.trim();
                 if (inputValue === '') return;
 
-                // 1. アルファベット以外の文字（ひらがな・カタカナ・漢字・数字・記号など）が含まれているか
-                // 厳密には、半角英字以外が含まれているかチェック
                 if (/[^a-zA-Z]/.test(inputValue)) {
                     showMessage('アルファベットで入力してください', 'var(--error-color)'); 
                     return;
                 }
 
-                // 2. 大文字小文字を区別せずに判定するための変換
                 const upperValue = inputValue.toUpperCase();
 
-                // 判定
                 if (upperValue === 'BAR') {
-                    // 元の入力「ONE」
                     showMessage('正解', 'var(--success-color)');
                 } else if (upperValue === 'ONE') {
-                    // 元の入力「BAR」
                     showMessage('惜しい', 'var(--warning-color)');
                 } else if (upperValue === 'UVAG') {
-                    // 元の入力「HINT」 (h->u, i->v, n->a, t->g)
                     showMessage('このサイトではアルファベットが13個ずれて表示されるようです', 'var(--info-color)');
                 } else {
                     showMessage('不正解', 'var(--danger-color)');
