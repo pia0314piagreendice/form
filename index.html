@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>謎解きフォーム</title>
     
+    <!-- クレーフォント (Klee One) の読み込み -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
@@ -77,8 +78,8 @@
         }
 
         .search-input {
-            flex: 1;
-            min-width: 0;
+            flex: 1; /* 入力欄を伸縮させる */
+            min-width: 0; /* スマホで縮めるための必須指定 */
             border: none;
             padding: 16px 20px;
             font-size: 18px;
@@ -93,7 +94,7 @@
         }
 
         .submit-btn {
-            flex-shrink: 0;
+            flex-shrink: 0; /* 送信ボタンが潰れないように固定 */
             background-color: var(--primary-color);
             color: white;
             border: none;
@@ -153,10 +154,10 @@
 <body>
 
     <div class="puzzle-container">
-        <!-- 画像 -->
-        <img src="formpianazo.001.jpeg" alt="問題画像" class="puzzle-image" style="max-width: 100%; height: auto;">
+        <!-- ご指定の画像 -->
+        <img src="formpianazo.001.jpeg" alt="問題画像" class="puzzle-image">
         
-        <!-- 検索風フォーム -->
+        <!-- 入力フォーム -->
         <form id="puzzleForm" class="search-form">
             <input type="text" id="puzzleInput" class="search-input" placeholder="アルファベットで入力" autocomplete="off" spellcheck="false">
             <button type="submit" class="submit-btn">送信</button>
@@ -177,9 +178,9 @@
             
             let messageTimeoutId = null;
             let isComposing = false;
-            let previousValue = "";
+            let previousValue = ""; // 前回の入力値を保存して差分を比較
 
-            // ROT13変換関数
+            // ROT13変換関数（アルファベットのみ13文字ずらす）
             function applyRot13(str) {
                 return str.replace(/[a-zA-Z]/g, (char) => {
                     const isUpper = char <= 'Z';
@@ -188,7 +189,7 @@
                 });
             }
 
-            // IME入力開始
+            // IME入力開始（日本語変換など）
             inputEl.addEventListener('compositionstart', () => {
                 isComposing = true;
             });
@@ -199,38 +200,58 @@
                 processInput();
             });
 
-            // 文字入力
+            // 通常の文字入力
             inputEl.addEventListener('input', () => {
-                if (isComposing) return; // IME入力中は処理しない
+                if (isComposing) return; // IME入力中は処理を保留
                 processInput();
             });
 
-            // 入力値の変換処理
             function processInput() {
-                const currentValue = inputEl.value;
-                if (currentValue === previousValue) return;
+                const newStr = inputEl.value;
+                const oldStr = previousValue;
+                
+                if (newStr === oldStr) return;
 
-                // アルファベットが含まれているかチェック
-                if (/[a-zA-Z]/.test(currentValue)) {
+                // 変更前と変更後の文字列を比較し、新しく追加された部分（差分）だけを抽出する
+                let prefixLen = 0;
+                while (prefixLen < oldStr.length && prefixLen < newStr.length && oldStr[prefixLen] === newStr[prefixLen]) {
+                    prefixLen++;
+                }
+
+                let suffixLen = 0;
+                while (suffixLen < oldStr.length - prefixLen && suffixLen < newStr.length - prefixLen && oldStr[oldStr.length - 1 - suffixLen] === newStr[newStr.length - 1 - suffixLen]) {
+                    suffixLen++;
+                }
+
+                // 新たに挿入された文字列
+                const insertedStr = newStr.substring(prefixLen, newStr.length - suffixLen);
+                
+                // アルファベットが含まれる場合のみシフト処理を適用
+                if (insertedStr.length > 0 && /[a-zA-Z]/.test(insertedStr)) {
+                    const shiftedInserted = applyRot13(insertedStr);
+                    
+                    // 前の文字列、シフトした文字列、後ろの文字列を結合
+                    const finalStr = newStr.substring(0, prefixLen) + shiftedInserted + newStr.substring(newStr.length - suffixLen);
+                    
+                    // カーソル位置を保存
                     const selectionStart = inputEl.selectionStart;
                     const selectionEnd = inputEl.selectionEnd;
                     
-                    const shiftedValue = applyRot13(currentValue);
-                    inputEl.value = shiftedValue;
-                    previousValue = shiftedValue;
-
-                    // カーソル位置を元に戻す
+                    inputEl.value = finalStr;
+                    previousValue = finalStr;
+                    
+                    // カーソル位置を復元
                     try {
                         inputEl.setSelectionRange(selectionStart, selectionEnd);
                     } catch (e) {
-                        // iOS Safari等でエラーになる場合への対応
+                        // iOS Safariの特定条件下でのエラー回避
                     }
                 } else {
-                    previousValue = currentValue;
+                    // 削除操作のみ、またはアルファベット以外の入力の場合はそのまま更新
+                    previousValue = newStr;
                 }
             }
 
-            // メッセージを表示して2秒で消す関数
             function showMessage(text, colorHex) {
                 if (messageTimeoutId) {
                     clearTimeout(messageTimeoutId);
@@ -250,29 +271,30 @@
                 }, 2000);
             }
 
-            // フォーム送信時の判定ロジック
             formEl.addEventListener('submit', (e) => {
                 e.preventDefault();
                 
                 const inputValue = inputEl.value.trim();
-                
                 if (inputValue === '') return;
 
-                // 1. アルファベット以外の文字が含まれているか
+                // 1. アルファベット以外の文字（ひらがな・カタカナ・漢字など）が含まれているか
                 if (/[^a-zA-Z]/.test(inputValue)) {
                     showMessage('アルファベットで入力してください', 'var(--error-color)'); 
                     return;
                 }
 
-                // 2. 大文字小文字を区別せずに判定
+                // 2. 大文字小文字を区別せずに判定するための変換
                 const upperValue = inputValue.toUpperCase();
 
+                // 判定
                 if (upperValue === 'BAR') {
+                    // 元の入力「ONE」
                     showMessage('正解', 'var(--success-color)');
                 } else if (upperValue === 'ONE') {
+                    // 元の入力「BAR」
                     showMessage('惜しい', 'var(--warning-color)');
                 } else if (upperValue === 'UVAG') {
-                    // 入力内容がHINT(表示上はUVAG)の場合
+                    // 元の入力「HINT」 (h->u, i->v, n->a, t->g)
                     showMessage('もう一度入力してください', 'var(--info-color)');
                 } else {
                     showMessage('不正解', 'var(--danger-color)');
