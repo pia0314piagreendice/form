@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>謎解きフォーム</title>
+    <title>13</title>
     
     <!-- クレーフォント (Klee One) の読み込み -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -122,7 +122,7 @@
         }
 
         .result-message {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 600;
             min-height: 36px;
             display: flex;
@@ -131,6 +131,7 @@
             opacity: 0;
             transition: opacity 0.3s ease;
             margin-top: 10px;
+            word-break: break-word;
         }
 
         @media (max-width: 480px) {
@@ -146,7 +147,7 @@
                 font-size: 16px;
             }
             .result-message {
-                font-size: 20px;
+                font-size: 16px;
             }
         }
     </style>
@@ -155,7 +156,7 @@
 
     <div class="puzzle-container">
         <!-- ご指定の画像 -->
-        <img src="formpianazo.001.jpeg" alt="問題画像" class="puzzle-image">
+        <img src="formpianazo.001.jpeg" alt="問題画像" class="puzzle-image" style="max-width: 100%; height: auto; margin-bottom: 20px;">
         
         <!-- 入力フォーム -->
         <form id="puzzleForm" class="search-form">
@@ -277,7 +278,8 @@
                 const inputValue = inputEl.value.trim();
                 if (inputValue === '') return;
 
-                // 1. アルファベット以外の文字（ひらがな・カタカナ・漢字など）が含まれているか
+                // 1. アルファベット以外の文字（ひらがな・カタカナ・漢字・数字・記号など）が含まれているか
+                // 厳密には、半角英字以外が含まれているかチェック
                 if (/[^a-zA-Z]/.test(inputValue)) {
                     showMessage('アルファベットで入力してください', 'var(--error-color)'); 
                     return;
@@ -295,7 +297,7 @@
                     showMessage('惜しい', 'var(--warning-color)');
                 } else if (upperValue === 'UVAG') {
                     // 元の入力「HINT」 (h->u, i->v, n->a, t->g)
-                    showMessage('もう一度入力してください', 'var(--info-color)');
+                    showMessage('このサイトではアルファベットが13個ずれて表示されるようです', 'var(--info-color)');
                 } else {
                     showMessage('不正解', 'var(--danger-color)');
                 }
