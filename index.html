@@ -2,180 +2,264 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>謎解きフォーム</title>
-    <!-- Klee Oneフォントの読み込み -->
+    
+    <!-- Google Fonts Klee One -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
     
     <style>
+        /* すべての要素にbox-sizingを適用し、はみ出しを防止 */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #5a80b4;
+            --primary-hover: #456897;
+            --bg-color: #f0f4f8;
+            --text-color: #334155;
+            --error-color: #d97706;
+            --success-color: #16a34a;
+            --warning-color: #ea580c;
+            --info-color: #2563eb;
+            --danger-color: #dc2626;
+        }
+
         body {
             font-family: 'Klee One', sans-serif;
-            background-color: #f4f7f6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            color: #333;
         }
-        .container {
+
+        .puzzle-container {
             width: 100%;
             max-width: 500px;
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            background: #ffffff;
+            padding: 30px 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
             text-align: center;
-            box-sizing: border-box;
         }
+
+        /* 画像：画面幅に応じて縮小 */
         .puzzle-image {
+            width: 100%;
             max-width: 100%;
-            max-height: 400px;
-            object-fit: contain;
+            height: auto;
+            border-radius: 12px;
             margin-bottom: 24px;
-            border-radius: 8px;
+            object-fit: contain;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            display: block;
         }
-        .search-bar {
+
+        /* 検索風フォーム（スマホ対応レイアウト） */
+        .search-form {
             display: flex;
+            flex-wrap: nowrap; /* ボタンが改行されないようにする */
             width: 100%;
             border: 2px solid #cbd5e1;
-            border-radius: 25px;
-            overflow: hidden;
-            margin-bottom: 12px;
-            transition: border-color 0.3s, box-shadow 0.3s;
+            border-radius: 30px;
+            overflow: hidden; /* ボタンの角丸を親に合わせる */
             background-color: #fff;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 20px;
         }
-        .search-bar:focus-within {
-            border-color: #7b9acc;
-            box-shadow: 0 0 0 3px rgba(123, 154, 204, 0.2);
+
+        .search-form:focus-within {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(90, 128, 180, 0.15);
         }
-        .search-bar input {
-            flex-grow: 1;
+
+        .search-input {
+            flex: 1; /* 残りの幅をすべて埋める */
+            min-width: 0; /* これがないとflexアイテムが親を突き破る原因になる */
             border: none;
-            padding: 14px 20px;
+            padding: 16px 20px;
             font-size: 18px;
             font-family: 'Klee One', sans-serif;
             outline: none;
             background: transparent;
+            color: var(--text-color);
         }
-        .search-bar button {
-            border: none;
-            background-color: #7b9acc;
+
+        .search-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .submit-btn {
+            flex-shrink: 0; /* 画面が狭くてもボタンが潰れないようにする */
+            background-color: var(--primary-color);
             color: white;
-            padding: 0 28px;
-            font-size: 16px;
+            border: none;
+            padding: 0 24px;
+            font-size: 18px;
             font-weight: 600;
             font-family: 'Klee One', sans-serif;
             cursor: pointer;
-            transition: background-color 0.2s;
-            white-space: nowrap;
+            transition: background-color 0.2s ease;
+            white-space: nowrap; /* テキストの折り返しを防止 */
         }
-        .search-bar button:hover {
-            background-color: #6382b5;
+
+        .submit-btn:hover {
+            background-color: var(--primary-hover);
         }
-        .hint-text {
-            font-size: 15px;
+        
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* ガイドテキストとメッセージ */
+        .guide-text {
+            font-size: 16px;
             color: #64748b;
-            margin: 0 0 24px 0;
+            margin: 0 0 16px 0;
         }
+
         .result-message {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 600;
-            height: 33px; 
+            min-height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.3s;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            margin-top: 10px;
+        }
+
+        /* モバイル向け微調整 */
+        @media (max-width: 480px) {
+            .puzzle-container {
+                padding: 20px 15px;
+            }
+            .search-input {
+                font-size: 16px;
+                padding: 14px 16px;
+            }
+            .submit-btn {
+                padding: 0 16px;
+                font-size: 16px;
+            }
+            .result-message {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- 問題画像の表示 -->
-        <img src="formpianazo.001.jpeg" alt="問題" class="puzzle-image">
+
+    <div class="puzzle-container">
+        <!-- 画像 -->
+        <img src="formpianazo.001.jpeg" alt="謎解き問題" class="puzzle-image">
         
-        <!-- 入力フォーム -->
-        <form id="puzzle-form">
-            <div class="search-bar">
-                <input type="text" id="puzzle-input" placeholder="アルファベットで入力" autocomplete="off" spellcheck="false">
-                <button type="submit">送信</button>
-            </div>
+        <!-- 検索風フォーム -->
+        <form id="puzzleForm" class="search-form">
+            <input type="text" id="puzzleInput" class="search-input" placeholder="アルファベットで入力" autocomplete="off" spellcheck="false">
+            <button type="submit" class="submit-btn">送信</button>
         </form>
         
-        <!-- 修正されたヒントテキスト -->
-        <p class="hint-text">分からない場合はヒントと入力してください</p>
+        <!-- 案内テキスト -->
+        <p class="guide-text">分からない場合はヒントと入力してください</p>
         
-        <!-- メッセージ表示エリア -->
-        <div id="result-message" class="result-message"></div>
+        <!-- 結果表示エリア -->
+        <div id="resultMessage" class="result-message"></div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const inputElement = document.getElementById('puzzle-input');
-            const formElement = document.getElementById('puzzle-form');
-            const resultMessage = document.getElementById('result-message');
+            const inputEl = document.getElementById('puzzleInput');
+            const formEl = document.getElementById('puzzleForm');
+            const messageEl = document.getElementById('resultMessage');
             
-            let hideMessageTimeout = null;
+            let messageTimeoutId = null;
 
-            // アルファベット入力を13文字シフト（ROT13）する処理
-            inputElement.addEventListener('beforeinput', (e) => {
+            // ROT13変換関数 (アルファベットを13文字ずらす)
+            function applyRot13(str) {
+                return str.replace(/[a-zA-Z]/g, (char) => {
+                    const baseCode = char <= 'Z' ? 65 : 97;
+                    return String.fromCharCode((char.charCodeAt(0) - baseCode + 13) % 26 + baseCode);
+                });
+            }
+
+            // 入力中の文字を監視してアルファベットだけをシフト
+            inputEl.addEventListener('beforeinput', (e) => {
+                // IME入力中(isComposing)ではない、かつアルファベットが含まれる場合
                 if (e.data && /[a-zA-Z]/.test(e.data) && !e.isComposing) {
                     e.preventDefault(); 
                     
-                    const shiftedText = e.data.replace(/[a-zA-Z]/g, char => {
-                        const baseCode = char <= 'Z' ? 65 : 97;
-                        return String.fromCharCode((char.charCodeAt(0) - baseCode + 13) % 26 + baseCode);
-                    });
+                    const shiftedText = applyRot13(e.data);
                     
-                    const start = inputElement.selectionStart;
-                    const end = inputElement.selectionEnd;
-                    inputElement.setRangeText(shiftedText, start, end, 'end');
+                    // カーソル位置に変換後の文字を挿入
+                    const startPos = inputEl.selectionStart;
+                    const endPos = inputEl.selectionEnd;
+                    inputEl.setRangeText(shiftedText, startPos, endPos, 'end');
+                    
+                    // カーソル位置を後ろに進める
+                    inputEl.setSelectionRange(startPos + shiftedText.length, startPos + shiftedText.length);
                 }
             });
 
-            // フォーム送信時の判定処理
-            formElement.addEventListener('submit', (e) => {
-                e.preventDefault();
-                
-                const inputValue = inputElement.value.trim();
-                if (inputValue === '') return;
-
-                if (hideMessageTimeout) {
-                    clearTimeout(hideMessageTimeout);
+            // メッセージを表示して2秒で消す関数
+            function showMessage(text, colorHex) {
+                if (messageTimeoutId) {
+                    clearTimeout(messageTimeoutId);
                 }
 
-                // アルファベット以外の文字が含まれているか判定
+                messageEl.textContent = text;
+                messageEl.style.color = colorHex;
+                messageEl.style.opacity = '1';
+
+                // 2000ms(2秒)後にフェードアウト
+                messageTimeoutId = setTimeout(() => {
+                    messageEl.style.opacity = '0';
+                    // フェードアウト完了後にテキストをクリア
+                    setTimeout(() => {
+                        if(messageEl.style.opacity === '0') {
+                            messageEl.textContent = '';
+                        }
+                    }, 300);
+                }, 2000);
+            }
+
+            // フォーム送信時の判定ロジック
+            formEl.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const inputValue = inputEl.value.trim();
+                
+                // 空送信は無視
+                if (inputValue === '') return;
+
+                // 1. アルファベット以外の文字（ひらがな、カタカナ、漢字、数字など）が含まれているか
                 if (/[^a-zA-Z]/.test(inputValue)) {
-                    showResult('アルファベットで入力してください', '#d97706'); 
+                    showMessage('アルファベットで入力してください', 'var(--error-color)'); 
                     return;
                 }
 
-                // 大文字・小文字を区別せず判定
+                // 2. 大文字小文字を区別せずに判定
                 const upperValue = inputValue.toUpperCase();
 
                 if (upperValue === 'BAR') {
-                    showResult('正解', '#16a34a'); // 緑色
+                    showMessage('正解', 'var(--success-color)');
                 } else if (upperValue === 'ONE') {
-                    showResult('惜しい', '#ea580c'); // オレンジ色
+                    showMessage('惜しい', 'var(--warning-color)');
                 } else if (upperValue === 'HINT' || upperValue === 'UVAG') {
-                    showResult('もう一度入力してください', '#2563eb'); // 青色
+                    // 入力内容がHINT、または13ずれてUVAGとなっている場合
+                    showMessage('もう一度入力してください', 'var(--info-color)');
                 } else {
-                    showResult('不正解', '#dc2626'); // 赤色
+                    showMessage('不正解', 'var(--danger-color)');
                 }
             });
-
-            // メッセージを表示し、2秒後に消去する関数
-            function showResult(text, color) {
-                resultMessage.textContent = text;
-                resultMessage.style.color = color;
-                
-                hideMessageTimeout = setTimeout(() => {
-                    resultMessage.textContent = '';
-                }, 2000);
-            }
         });
     </script>
 </body>
